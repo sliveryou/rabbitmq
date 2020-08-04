@@ -1,0 +1,2 @@
+# rabbitmq
+Friendly RabbitMQ Wraper.
