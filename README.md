@@ -1,2 +1,2 @@
 # rabbitmq
-Friendly RabbitMQ Wraper.
+Friendly RabbitMQ Wrapper.
