@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"log"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -78,9 +79,8 @@ func (c *Connection) Channel() (*Channel, error) {
 	}
 
 	channel := &Channel{
-		Channel:   ch,
-		delayer:   &delayer{delaySeconds: c.delaySeconds},
-		methodMap: make(map[string][]reflect.Value),
+		Channel: ch,
+		delayer: &delayer{delaySeconds: c.delaySeconds},
 	}
 
 	go func() {
@@ -103,10 +103,12 @@ func (c *Connection) Channel() (*Channel, error) {
 				if err == nil {
 					debug("channel recreate success")
 					channel.Channel = ch
-					for methodName := range channel.methodMap {
+					channel.methodMap.Range(func(k, v interface{}) bool {
+						methodName, _ := k.(string)
 						channel.DoMethod(methodName)
 						debugf("channel do method %v success", methodName)
-					}
+						return true
+					})
 					break
 				}
 				debugf("channel recreate failed, err: %v", err)
@@ -123,7 +125,7 @@ type Channel struct {
 	*amqp.Channel
 	*delayer
 	closed    int32
-	methodMap map[string][]reflect.Value
+	methodMap sync.Map
 }
 
 // RegisterMethod registers the channel method and params, when the channel is recreated, the method can be executed again.
@@ -132,17 +134,18 @@ func (ch *Channel) RegisterMethod(methodName string, params ...interface{}) {
 	for i := range params {
 		values = append(values, reflect.ValueOf(params[i]))
 	}
-	ch.methodMap[methodName] = values
+	ch.methodMap.Store(methodName, values)
 }
 
 // DoMethod executes the registered channel method and params by methodName.
 func (ch *Channel) DoMethod(methodName string) []reflect.Value {
-	params, ok := ch.methodMap[methodName]
+	params, ok := ch.methodMap.Load(methodName)
 	if !ok {
 		return nil
 	}
 	vc := reflect.ValueOf(ch.Channel)
-	result := vc.MethodByName(methodName).Call(params)
+	ps, _ := params.([]reflect.Value)
+	result := vc.MethodByName(methodName).Call(ps)
 	return result
 }
 
@@ -184,6 +187,7 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 
 			if ch.IsClosed() {
 				close(deliveries)
+				debug("deliveries closed")
 				break
 			}
 		}
