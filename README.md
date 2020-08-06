@@ -8,3 +8,15 @@
 [![Github Stars](https://img.shields.io/github/stars/sliveryou/rabbitmq.svg?style=flat)](https://github.com/sliveryou/rabbitmq/stargazers)
 
 Friendly RabbitMQ Wrapper.
+
+## Installation
+
+1. Create rabbitmq docker container by using:
+```sh
+$ docker run --name rabbitmq --hostname rabbitmq-test-node-1 -p 15672:15672 -p 5672:5672 -e RABBITMQ_DEFAULT_USER=root -e RABBITMQ_DEFAULT_PASS=123123 -d rabbitmq:3.8.5-management
+```
+
+2. Download rabbitmq package by using:
+```sh
+$ go get github.com/sliveryou/rabbitmq
+```
