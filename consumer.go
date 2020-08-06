@@ -14,7 +14,7 @@ type Consumer struct {
 }
 
 // MessageHandler represents a AMQP delivery message handle function.
-type MessageHandler func(delivery amqp.Delivery)
+type MessageHandler func(amqp.Delivery)
 
 // Handler returns consumer message handler.
 func (c *Consumer) Handler() MessageHandler {
