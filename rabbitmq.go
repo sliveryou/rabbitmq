@@ -131,7 +131,7 @@ type PublishOptions struct {
 	Immediate  bool
 }
 
-// Session represents execute configs and options.
+// Session represents executer configs and options.
 type Session struct {
 	Exchange       Exchange
 	Queue          Queue
@@ -146,12 +146,12 @@ type executer struct {
 	session *Session
 }
 
-// SetDelay sets the channel delay retry seconds.
+// SetDelay sets delay retry seconds for the AMQP channel.
 func (e *executer) SetDelay(seconds int) {
 	e.channel.SetDelay(seconds)
 }
 
-// Close closes the channel and sets the closed flag.
+// Close closes the AMQP channel.
 func (e *executer) Close() error {
 	return e.channel.Close()
 }

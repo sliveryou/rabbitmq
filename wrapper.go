@@ -71,7 +71,7 @@ type Connection struct {
 	*delayer
 }
 
-// Channel wraps amqp.Connection.Channel, which can get a auto reconnect channel.
+// Channel wraps amqp.Connection.Channel, which can get a auto recreate channel.
 func (c *Connection) Channel() (*Channel, error) {
 	ch, err := c.Connection.Channel()
 	if err != nil {
@@ -94,7 +94,7 @@ func (c *Connection) Channel() (*Channel, error) {
 			}
 			debugf("channel closed, reason: %v", reason)
 
-			// reconnect if channel is not closed by developer
+			// recreate if channel is not closed by developer
 			for {
 				// wait for channel recreate
 				wait(channel.delaySeconds)
@@ -165,7 +165,7 @@ func (ch *Channel) Close() error {
 	return ch.Channel.Close()
 }
 
-// Consume warps amqp.Channel.Consume, the returned DeliveryTag will end only when channel closed by developer.
+// Consume warps amqp.Channel.Consume, the returned Delivery will end only when channel closed by developer.
 func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
 	deliveries := make(chan amqp.Delivery)
 

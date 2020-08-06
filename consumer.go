@@ -106,13 +106,13 @@ func (c *Consumer) Qos(prefetchCount int) error {
 	return err
 }
 
-// RegisterMethod registers the consumer channel method and params,
+// RegisterMethod registers the channel method and params in consumer channel,
 // when the channel is recreated, the method can be executed again.
 func (c *Consumer) RegisterMethod(methodName string, params ...interface{}) {
 	c.channel.RegisterMethod(methodName, params...)
 }
 
-// DoMethod executes the consumer registered channel method and params by methodName.
+// DoMethod executes the consumer channel registered channel method and params by methodName.
 func (c *Consumer) DoMethod(methodName string) []reflect.Value {
 	return c.channel.DoMethod(methodName)
 }
