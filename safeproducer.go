@@ -119,6 +119,10 @@ func (p *SafeProducer) notifyPublish(notifier PublishNotifier) {
 
 	go func() {
 		for confirm := range confirmations {
+			dc, ok := p.deliveryCache.(*DeliveryMapCache)
+			if ok {
+				debug(dc.deliveryMap, dc.deliveryTag)
+			}
 			message := p.deliveryCache.Load(confirm.DeliveryTag)
 			notifier(p, message, confirm)
 		}

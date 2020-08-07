@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultMapGC = 100 // default number of keys to start map garbage collection
+	DefaultMapGC = 200 // default number of keys to start map garbage collection
 )
 
 type DeliveryCacher interface {
