@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	defaultDelaySeconds = 3 // default delay retry seconds
-	defaultRetryTimes   = 3 // default safe publish retry times
+	DefaultDelaySeconds = 3 // default delay retry seconds of reconnect or recreate
 )
 
 var (
-	defaultEnableDebug = false // default enable debug flag
+	defaultEnableDebug = false // default whether enable debug flag
 )
 
 // EnableDebug enables or not enables debug log.
@@ -33,7 +32,7 @@ func Dial(url string) (*Connection, error) {
 
 	connection := &Connection{
 		Connection: conn,
-		delayer:    &delayer{delaySeconds: defaultDelaySeconds},
+		delayer:    &delayer{delaySeconds: DefaultDelaySeconds},
 	}
 
 	go func() {
