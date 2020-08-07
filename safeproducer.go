@@ -1,18 +1,25 @@
 package rabbitmq
 
 import (
+	"errors"
+	"sync/atomic"
+
 	"github.com/streadway/amqp"
 )
 
 const (
-	DefaultRetryTimes       = 3  // default retry times of safe publish
-	DefaultRepublishRoutine = 10 // default number of quick republish goroutine
+	// DefaultRetryTimes represents default retry times of safe publish
+	DefaultRetryTimes = 3
+	// DefaultRepublishRoutine represents default number of quick republish goroutine
+	DefaultRepublishRoutine = 10
 )
 
 // SafeProducer represents a AMQP safe producer.
 type SafeProducer struct {
 	*Producer
 	publishNotifier PublishNotifier
+	confirmed       int32
+	deliveryTag     uint64
 	deliveryCache   DeliveryCacher
 }
 
@@ -66,14 +73,23 @@ func (r *RabbitMQ) NewSafeProducer(session Session, deliveryCache DeliveryCacher
 // Safe producer will record the publish message sent to the server to deliveryCache and
 // each time a message is sent, the deliveryTag increases.
 func (p *SafeProducer) Publish(publishing amqp.Publishing) error {
+	if !p.IsConfirmed() {
+		return errors.New("channel is not in confirm mode")
+	}
+
 	err := p.Producer.Publish(publishing)
 	if err != nil {
 		return err
 	}
 
-	p.deliveryCache.Store(publishing)
+	p.deliveryCache.Store(atomic.AddUint64(&p.deliveryTag, 1), publishing)
 
 	return nil
+}
+
+// IsConfirmed reports whether the channel is in confirm mode.
+func (p *SafeProducer) IsConfirmed() bool {
+	return atomic.LoadInt32(&p.confirmed) == 1
 }
 
 // notifyPublish registers a listener for AMQP message confirmation by notifier.
@@ -91,6 +107,7 @@ func (p *SafeProducer) notifyPublish(notifier PublishNotifier) {
 				wait(p.channel.delaySeconds)
 				continue
 			}
+			atomic.StoreInt32(&p.confirmed, 1)
 
 			go func(publishings <-chan amqp.Publishing) {
 				semaphore := make(chan struct{}, DefaultRepublishRoutine)
@@ -105,6 +122,8 @@ func (p *SafeProducer) notifyPublish(notifier PublishNotifier) {
 				}
 			}(p.deliveryCache.Republish())
 
+			atomic.StoreUint64(&p.deliveryTag, 0)
+
 			for c := range p.channel.NotifyPublish(make(chan amqp.Confirmation)) {
 				confirmations <- c
 			}
@@ -114,15 +133,16 @@ func (p *SafeProducer) notifyPublish(notifier PublishNotifier) {
 				debug("confirmations closed")
 				break
 			}
+			atomic.StoreInt32(&p.confirmed, 0)
 		}
 	}()
 
 	go func() {
 		for confirm := range confirmations {
-			dc, ok := p.deliveryCache.(*DeliveryMapCache)
-			if ok {
-				debug(dc.deliveryMap, dc.deliveryTag)
-			}
+			// dc, ok := p.deliveryCache.(*DeliveryMapCache)
+			// if ok {
+			// 	debug(dc.deliveryMap, p.deliveryTag, confirm.DeliveryTag)
+			// }
 			message := p.deliveryCache.Load(confirm.DeliveryTag)
 			notifier(p, message, confirm)
 		}

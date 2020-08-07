@@ -114,5 +114,5 @@ func (c *Consumer) RegisterMethod(methodName string, params ...interface{}) {
 
 // DoMethod executes the consumer channel registered channel method and params by methodName.
 func (c *Consumer) DoMethod(methodName string) []reflect.Value {
-	return c.channel.DoMethod(methodName)
+	return c.channel.DoMethod(c.channel.Channel, methodName)
 }

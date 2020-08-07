@@ -11,11 +11,13 @@ import (
 )
 
 const (
-	DefaultDelaySeconds = 3 // default delay retry seconds of reconnect or recreate
+	// DefaultDelaySeconds represents default delay retry seconds of reconnect or recreate
+	DefaultDelaySeconds = 3
 )
 
 var (
-	defaultEnableDebug = false // default whether enable debug flag
+	// defaultEnableDebug represents default whether enable debug flag
+	defaultEnableDebug = false
 )
 
 // EnableDebug enables or not enables debug log.
@@ -23,7 +25,7 @@ func EnableDebug(isEnable bool) {
 	defaultEnableDebug = isEnable
 }
 
-// Dial wraps amqp.Dial, which can dial and get a reconnect connection.
+// Dial wraps amqp.Dial, which can dial and get a auto reconnect connection.
 func Dial(url string) (*Connection, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -101,13 +103,13 @@ func (c *Connection) Channel() (*Channel, error) {
 				ch, err := c.Connection.Channel()
 				if err == nil {
 					debug("channel recreate success")
-					channel.Channel = ch
 					channel.methodMap.Range(func(k, v interface{}) bool {
 						methodName, _ := k.(string)
-						channel.DoMethod(methodName)
+						channel.DoMethod(ch, methodName)
 						debugf("channel do method %v success", methodName)
 						return true
 					})
+					channel.Channel = ch
 					break
 				}
 				debugf("channel recreate failed, err: %v", err)
@@ -137,12 +139,12 @@ func (ch *Channel) RegisterMethod(methodName string, params ...interface{}) {
 }
 
 // DoMethod executes the registered channel method and params by methodName.
-func (ch *Channel) DoMethod(methodName string) []reflect.Value {
+func (ch *Channel) DoMethod(channel *amqp.Channel, methodName string) []reflect.Value {
 	params, ok := ch.methodMap.Load(methodName)
 	if !ok {
 		return nil
 	}
-	vc := reflect.ValueOf(ch.Channel)
+	vc := reflect.ValueOf(channel)
 	ps, _ := params.([]reflect.Value)
 	result := vc.MethodByName(methodName).Call(ps)
 	return result

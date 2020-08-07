@@ -74,8 +74,8 @@ func (p *Producer) Publish(publishing amqp.Publishing) error {
 		if err == nil {
 			break
 		}
+		// debugf("publish failed, err: %v, retry %v", err, i)
 		wait(p.channel.delaySeconds)
-		debug("retry publish message, i:", i)
 	}
 
 	return err
