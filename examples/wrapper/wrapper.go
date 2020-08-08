@@ -25,7 +25,7 @@ func main() {
 	exchangeName := "exchange.test"
 	queueName := "queue.test"
 
-	err = producerCh.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, false, false, false, false, nil)
+	err = producerCh.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -43,8 +43,9 @@ func main() {
 		for {
 			msg := time.Now().Format("2006-01-02 15:04:05")
 			err := producerCh.Publish(exchangeName, "test", false, false, amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        []byte(msg),
+				ContentType:  "text/plain",
+				DeliveryMode: amqp.Persistent,
+				Body:         []byte(msg),
 			})
 			log.Printf("publish msg: %v, err: %v", msg, err)
 			time.Sleep(1 * time.Second)
@@ -68,7 +69,7 @@ func main() {
 		}
 	}()
 
-	<-time.After(30 * time.Second)
+	<-time.After(10 * time.Second)
 	producerCh.Close()
 	consumerCh.Close()
 	conn.Close()

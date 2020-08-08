@@ -91,7 +91,12 @@ func main() {
 		case <-ticker1.C:
 			msg.Timestamp = time.Now()
 			for i := 0; i < 5; i++ {
-				go safeProducer.Publish(msg)
+				go func() {
+					err = safeProducer.Publish(msg)
+					if err != nil {
+						log.Println(err)
+					}
+				}()
 			}
 		case <-ticker2.C:
 			time.Sleep(5 * time.Second)
